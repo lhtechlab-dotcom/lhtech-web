@@ -3,75 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LHTech Club - Test Hệ Thống</title>
+    <title>LHTech Club - Quản Lý Thành Viên</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7f6; }
-        .header { background-color: #2b6cb0; color: white; padding: 10px 20px; border-radius: 5px; }
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7f6; max-width: 800px; margin: auto; }
+        .header { background-color: #2b6cb0; color: white; padding: 15px 20px; border-radius: 8px; text-align: center; }
         .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        button { background-color: #dd6b20; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #c05621; }
+        .form-box { background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input, select { width: 100%; padding: 8px; margin: 6px 0 12px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #319795; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
+        button:hover { background-color: #2c7a7b; }
+        .btn-load { background-color: #2b6cb0; margin-top: 10px; }
+        .btn-load:hover { background-color: #2c5282; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>🚀 Cổng thông tin CLB LHTech</h1>
-        <p>Phiên bản thử nghiệm kết nối Firebase</p>
+        <p>Hệ thống Đăng ký & Quản lý Thành viên</p>
     </div>
 
-    <br>
-    <button id="loadBtn">Tải danh sách thành viên từ Database</button>
-    <div id="danhSach"></div>
+    <!-- FORM GỬI DỮ LIỆU LÊN FIREBASE -->
+    <div class="form-box">
+        <h3>📝 Thêm Thông Tin Thành Viên Mới</h3>
+        <form id="userForm">
+            <label>Họ và tên:</label>
+            <input type="text" id="ho_ten" placeholder="Ví dụ: Nguyễn Văn A" required>
 
-    <!-- Nạp thư viện Firebase trực tiếp từ Internet (không cần cài đặt) -->
+            <label>Mã số sinh viên (MSSV):</label>
+            <input type="text" id="mssv" placeholder="Ví dụ: 23110012" required>
+
+            <label>Lớp:</label>
+            <input type="text" id="lop" placeholder="Ví dụ: 23T1" required>
+
+            <label>Chuyên ngành:</label>
+            <select id="chuyen_nganh">
+                <option value="Cơ khí & CAD">Cơ khí & CAD</option>
+                <option value="Phần cứng & PCB">Phần cứng & PCB</option>
+                <option value="Lập trình Nhúng">Lập trình Nhúng</option>
+                <option value="AI, ROS2 & Vision">AI, ROS2 & Vision</option>
+            </select>
+
+            <label>Cấp độ hiện tại:</label>
+            <select id="cap_do">
+                <option value="C">Cấp C (Tập sự)</option>
+                <option value="B">Cấp B (Thực chiến)</option>
+                <option value="A">Cấp A (Thành viên chính thức)</option>
+                <option value="S">Cấp S (Leader/Chuyên gia)</option>
+            </select>
+
+            <button type="submit">Gửi dữ liệu lên Database</button>
+        </form>
+    </div>
+
+    <!-- KHU VỰC NHẬN VÀ HIỂN THỊ DỮ LIỆU TỪ FIREBASE -->
+    <div class="card" style="margin-top: 30px;">
+        <h3>📊 Danh Sách Thành Viên Trên Đám Mây</h3>
+        <button class="btn-load" id="loadBtn">Tải / Làm mới danh sách</button>
+        <div id="danhSach"></div>
+    </div>
+
+    <!-- KẾT NỐI VÀ XỬ LÝ FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         // ==========================================
-        // DÁN ĐOẠN MÃ FIREBASE CONFIG CỦA BẠN VÀO ĐÂY
+        // THAY THẾ CONFIG THẬT CỦA BẠN VÀO ĐÂY
         // ==========================================
         const firebaseConfig = {
             apiKey: "DÁN_API_KEY_CỦA_BẠN",
-            authDomain: "lhtech-management.firebaseapp.com", 
+            authDomain: "lhtech-management.firebaseapp.com",
             projectId: "lhtech-management",
             storageBucket: "...",
             messagingSenderId: "...",
             appId: "..."
         };
 
-        // Khởi tạo kết nối
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Bắt sự kiện khi bấm nút
-        document.getElementById('loadBtn').addEventListener('click', async () => {
+        // 1. GỬI DỮ LIỆU LÊN FIREBASE
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const ho_ten = document.getElementById('ho_ten').value;
+            const mssv = document.getElementById('mssv').value;
+            const lop = document.getElementById('lop').value;
+            const chuyen_nganh = document.getElementById('chuyen_nganh').value;
+            const cap_do = document.getElementById('cap_do').value;
+
+            try {
+                // Thêm một bản ghi mới vào bảng "users"
+                await addDoc(collection(db, "users"), {
+                    ho_ten: ho_ten,
+                    mssv: mssv,
+                    lop: lop,
+                    chuyen_nganh: chuyen_nganh,
+                    cap_do: cap_do,
+                    nhanh_hoat_dong: "Đang cập nhật",
+                    thanh_tich: ["Tham gia LHTech"]
+                });
+                alert("Đã gửi thông tin lên Database thành công!");
+                document.getElementById('userForm').reset();
+                loadData(); // Tự động tải lại danh sách
+            } catch (error) {
+                alert("Lỗi khi gửi dữ liệu: " + error.message);
+            }
+        });
+
+        // 2. NHẬN DỮ LIỆU TỪ FIREBASE
+        async function loadData() {
             const danhSachDiv = document.getElementById('danhSach');
-            danhSachDiv.innerHTML = "<p>Đang kết nối đám mây để tải dữ liệu...</p>";
+            danhSachDiv.innerHTML = "<p>Đang tải dữ liệu từ đám mây...</p>";
             
             try {
-                // Gọi tới bảng "users" mà bạn vừa tạo
                 const querySnapshot = await getDocs(collection(db, "users"));
-                danhSachDiv.innerHTML = ""; // Xóa chữ đang tải
+                danhSachDiv.innerHTML = "";
                 
-                // Vòng lặp in ra từng sinh viên
+                if (querySnapshot.empty) {
+                    danhSachDiv.innerHTML = "<p>Chưa có dữ liệu thành viên nào.</p>";
+                    return;
+                }
+
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     danhSachDiv.innerHTML += `
-                        <div class="card">
-                            <h3 style="margin-top:0; color:#2b6cb0;">${data.ho_ten} - ${data.mssv || ''}</h3>
-                            <p><strong>Lớp:</strong> ${data.lop || 'Chưa cập nhật'}</p>
-                            <p><strong>Cấp độ:</strong> <span style="color:red; font-weight:bold;">Cấp ${data.cap_do}</span></p>
-                            <p><strong>Chuyên môn:</strong> ${data.chuyen_nganh}</p>
-                            <p><strong>Định hướng:</strong> ${data.nhanh_hoat_dong}</p>
+                        <div style="background: #f9f9f9; border-left: 4px solid #2b6cb0; padding: 10px; margin-top: 10px; border-radius: 4px;">
+                            <h4 style="margin: 0 0 5px 0; color: #2b6cb0;">${data.ho_ten} (${data.mssv})</h4>
+                            <p style="margin: 3px 0;"><strong>Lớp:</strong> ${data.lop} | <strong>Chuyên ngành:</strong> ${data.chuyen_nganh}</p>
+                            <p style="margin: 3px 0;"><strong>Cấp độ:</strong> <span style="color: #e53e3e; font-weight: bold;">Cấp ${data.cap_do}</span></p>
                         </div>
                     `;
                 });
             } catch (error) {
-                danhSachDiv.innerHTML = `<p style="color:red">Lỗi kết nối: ${error.message}</p>`;
-                console.error("Lỗi chi tiết:", error);
+                danhSachDiv.innerHTML = `<p style="color:red">Lỗi tải dữ liệu: ${error.message}</p>`;
             }
-        });
+        }
+
+        document.getElementById('loadBtn').addEventListener('click', loadData);
+        
+        // Tự động tải dữ liệu khi vừa mở trang
+        loadData();
     </script>
 </body>
 </html>
