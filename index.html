@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LHTech Club - Test Hệ Thống</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7f6; }
+        .header { background-color: #2b6cb0; color: white; padding: 10px 20px; border-radius: 5px; }
+        .card { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        button { background-color: #dd6b20; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #c05621; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🚀 Cổng thông tin CLB LHTech</h1>
+        <p>Phiên bản thử nghiệm kết nối Firebase</p>
+    </div>
+
+    <br>
+    <button id="loadBtn">Tải danh sách thành viên từ Database</button>
+    <div id="danhSach"></div>
+
+    <!-- Nạp thư viện Firebase trực tiếp từ Internet (không cần cài đặt) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // ==========================================
+        // DÁN ĐOẠN MÃ FIREBASE CONFIG CỦA BẠN VÀO ĐÂY
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "DÁN_API_KEY_CỦA_BẠN",
+            authDomain: "lhtech-management.firebaseapp.com", 
+            projectId: "lhtech-management",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+
+        // Khởi tạo kết nối
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Bắt sự kiện khi bấm nút
+        document.getElementById('loadBtn').addEventListener('click', async () => {
+            const danhSachDiv = document.getElementById('danhSach');
+            danhSachDiv.innerHTML = "<p>Đang kết nối đám mây để tải dữ liệu...</p>";
+            
+            try {
+                // Gọi tới bảng "users" mà bạn vừa tạo
+                const querySnapshot = await getDocs(collection(db, "users"));
+                danhSachDiv.innerHTML = ""; // Xóa chữ đang tải
+                
+                // Vòng lặp in ra từng sinh viên
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    danhSachDiv.innerHTML += `
+                        <div class="card">
+                            <h3 style="margin-top:0; color:#2b6cb0;">${data.ho_ten} - ${data.mssv || ''}</h3>
+                            <p><strong>Lớp:</strong> ${data.lop || 'Chưa cập nhật'}</p>
+                            <p><strong>Cấp độ:</strong> <span style="color:red; font-weight:bold;">Cấp ${data.cap_do}</span></p>
+                            <p><strong>Chuyên môn:</strong> ${data.chuyen_nganh}</p>
+                            <p><strong>Định hướng:</strong> ${data.nhanh_hoat_dong}</p>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                danhSachDiv.innerHTML = `<p style="color:red">Lỗi kết nối: ${error.message}</p>`;
+                console.error("Lỗi chi tiết:", error);
+            }
+        });
+    </script>
+</body>
+</html>
